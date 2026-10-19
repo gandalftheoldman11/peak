@@ -1,0 +1,9 @@
+{
+  "appId": "app.peak.workout",
+  "appName": "Peak",
+  "webDir": "www",
+  "ios": {
+    "contentInset": "never",
+    "backgroundColor": "#0E1330"
+  }
+}
