@@ -1,0 +1,54 @@
+name: Build iPhone app
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md']
+
+jobs:
+  ios:
+    defaults:
+      run:
+        shell: bash
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - run: npm install --no-audit --no-fund
+
+      - name: Copy the app into www
+        run: npm run web
+
+      - name: Create the iOS project
+        run: |
+          npx cap add ios --packagemanager SPM || true
+          test -d ios/App/CapApp-SPM
+
+      - name: App icon
+        run: |
+          mkdir -p assets
+          node -e "require('sharp')('icon.svg').resize(1024,1024).flatten({background:'#0E1330'}).png().toFile('assets/icon-only.png')"
+          npx capacitor-assets generate --ios --iconBackgroundColor '#0E1330'
+
+      - name: Copy web app into iOS project
+        run: npx cap sync ios
+
+      - name: Build unsigned .ipa (for free sideloading with SideStore or AltStore)
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath "$RUNNER_TEMP/Unsigned.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            MARKETING_VERSION="1.0" CURRENT_PROJECT_VERSION="${{ github.run_number }}" archive | tail -n 40
+          cd "$RUNNER_TEMP" && rm -rf Payload && mkdir Payload
+          cp -R Unsigned.xcarchive/Products/Applications/App.app Payload/
+          zip -qry "$GITHUB_WORKSPACE/Peak-unsigned.ipa" Payload
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: peak-iphone-unsigned-ipa-${{ github.run_number }}
+          path: Peak-unsigned.ipa
