@@ -162,6 +162,19 @@ nav button[aria-current="page"]{color:var(--accent)}
 .pose.wide svg{width:60%;margin:0 auto}
 .pose svg{width:100%;height:auto;display:block;max-height:170px}
 .pose span{font-size:.78rem;font-weight:700;color:var(--muted)}
+.tier{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:16px}
+.tier button{border:2px solid var(--line);background:var(--surface);border-radius:14px;padding:12px 10px;text-align:left}
+.tier button b{display:block;font-size:1.15rem;font-stretch:118%}
+.tier button span{font-size:.8rem;color:var(--muted)}
+.tier button[aria-pressed="true"]{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.tier button[aria-pressed="true"] b{color:var(--accent)}
+.mk{align-items:center}
+.mk .check{width:42px;height:42px;flex-shrink:0}
+.mk.got .check{background:var(--good);border-color:var(--good)}
+.mk.got .check svg{stroke:#fff}
+.mk.got b,.mk.got .q{text-decoration:line-through;opacity:.55}
+.mbar{height:8px;border-radius:99px;background:var(--line);overflow:hidden;margin-top:10px}
+.mbar i{display:block;height:100%;background:var(--good);border-radius:99px;transition:width .3s ease}
 
 .sheet-bg{position:fixed;inset:0;z-index:50;background:rgba(8,10,24,.55);display:none;align-items:flex-end;justify-content:center;padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px))}
 .sheet-bg.on{display:flex}
@@ -354,16 +367,37 @@ const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
 
 /* ---------- food data ---------- */
 const MEALS = [
-  {t:"2:30 PM",h:14.5,name:"Meal 1",what:"2–3 eggs (scrambled or boiled), 1 cup rice, 1 banana, a glass of milk."},
-  {t:"5:00 PM",h:17,name:"Afternoon snack",what:"1 saba or banana and 2 pandesal with peanut butter. On lift days, train about an hour after."},
-  {t:"7:30 PM",h:19.5,name:"Meal 2, after workout",what:"Your biggest meal: 1½–2 cups rice, a palm-size piece of chicken, fish or pork, and vegetables."},
-  {t:"11:00 PM",h:23,name:"Meal 3",what:"1–1½ cups rice with a protein ulam like monggo, tokwa, or sardines with egg, plus vegetables."},
-  {t:"2:00 AM",h:26,name:"Late snack",what:"A glass of milk with a boiled egg, peanuts, or boiled kamote."}
+  {t:"2:30 PM",h:14.5,name:"Meal 1",what:"3 eggs (scrambled or boiled) and 1 cup rice."},
+  {t:"5:00 PM",h:17,name:"Afternoon snack",what:"A banana or boiled kamote. On lift days, train about an hour after."},
+  {t:"7:30 PM",h:19.5,name:"Meal 2, after workout",what:"Your biggest meal: 1½–2 cups rice with chicken breast, balunbalunan adobo, sardinas with egg, or tokwa, plus vegetables."},
+  {t:"11:00 PM",h:23,name:"Meal 3",what:"1–1½ cups rice with ginisang monggo, dilis and vegetables. Cook a big pot, it lasts 2 days in the fridge."},
+  {t:"2:00 AM",h:26,name:"Late snack",what:"A boiled egg with a handful of peanuts, or boiled kamote."}
 ];
-const MEAL_P = [26,10,33,22,14];
+const MEAL_P = [22,6,34,26,10];
 const PROTEIN_GOAL = 100;
 const PROTEIN_GUIDE = [["1 egg","6 g"],["Palm-size chicken, pork or fish","25 g"],["1 can sardines","18–20 g"],["1 can tuna","15–20 g"],["1 cup cooked monggo","14 g"],["1 block tokwa","10–15 g"],["1 glass milk","8 g"],["Handful of peanuts","7 g"],["1 cup rice","4 g"]];
 function proteinToday(){ const t=mealsToday(); return MEAL_P.reduce((s,g,i)=>s+(t[i]?g:0),0); }
+const MARKET_TIERS = {"750":{label:"Budget week",protein:"≈85 g protein a day"},"1000":{label:"Full week",protein:"≈110 g protein a day"}};
+const MARKET = [
+  {k:"eggs",g:"Protein",n:"Eggs",q:{"750":"20 pcs","1000":"1 tray (30 pcs)"},p:{"750":180,"1000":270},note:"Your cheapest quality protein."},
+  {k:"gizzard",g:"Protein",n:"Balunbalunan",q:{"750":"¼ kg","1000":"½ kg"},p:{"750":45,"1000":90},note:"Freeze in daily portions on day 1."},
+  {k:"breast",g:"Protein",n:"Chicken breast",q:{"750":"¼ kg","1000":"½ kg"},p:{"750":65,"1000":130},note:"Freeze in daily portions on day 1."},
+  {k:"monggo",g:"Protein",n:"Dried monggo",q:"½ kg",p:55,note:"Never spoils."},
+  {k:"sardines",g:"Protein",n:"Canned sardines",q:"2 cans",p:60},
+  {k:"tokwa",g:"Protein",n:"Tokwa",q:"2 blocks",p:30,note:"Eat in the first 3 days."},
+  {k:"dilis",g:"Protein",n:"Dilis",q:"1 small pack",p:30},
+  {k:"peanuts",g:"Protein",n:"Peanuts",q:"1 pack",p:20,only:"1000"},
+  {k:"rice",g:"Energy",n:"Rice",q:"2.5 kg",p:130},
+  {k:"kamote",g:"Energy",n:"Kamote",q:"1 kg",p:60},
+  {k:"banana",g:"Energy",n:"Banana (latundan)",q:"5 pcs",p:35,note:"Buy some yellow and some still green so they last the week."},
+  {k:"veg",g:"Vegetables",n:"Kangkong, kalabasa, sayote",q:"",p:50,note:"Malunggay is often free from a neighbor."},
+  {k:"basics",g:"Vegetables",n:"Onion, garlic, tomato",q:"",p:40}
+];
+function marketState(){
+  const wk=dayKey(weekStart(myNow()));
+  if(!S.market || S.market.week!==wk){ const tier=(S.market&&S.market.tier)||"1000"; S.market={tier, week:wk, bought:{}}; }
+  return S.market;
+}
 const FOODS = [
   {g:"Protein",note:"Have some at every meal. A palm-size portion is enough.",items:[
     ["Eggs","₱8–10 each"],["Chicken legs or thighs","₱190–240/kg"],["Chicken liver or gizzard","₱150–200/kg"],
@@ -378,12 +412,13 @@ const FOODS = [
     ["Talong","₱60–100/kg"],["Papaya or seasonal fruit","₱30–60/kg"]]}
 ];
 const ULAM = [
-  {g:"Eggs",i:[["Tortang talong with 2 eggs","Fry the talong, dip in beaten egg, fry again.",13,"₱30–40"],["Egg and malunggay omelette","3 eggs with a handful of malunggay.",18,"₱30–35"],["Ginisang kamatis with egg","Sauté tomato and onion, scramble in 3 eggs.",18,"₱30–40"],["Hard-boiled eggs in sauce","Boiled eggs simmered in adobo or tomato sauce.",18,"₱30–40"]]},
-  {g:"Chicken",i:[["Adobong atay at balunbalunan","Liver and gizzard adobo. One of the cheapest proteins.",25,"₱40–50"],["Tinolang manok","With malunggay and sayote or green papaya.",25,"₱60–80"],["Adobong manok","Use legs or thighs, cheaper than breast.",25,"₱60–80"],["Arroz caldo with egg","Chicken rice porridge plus a boiled egg.",20,"₱40–50"],["Chicken sotanghon soup","Shredded chicken, sotanghon, cabbage.",20,"₱45–60"]]},
-  {g:"Fish",i:[["Pritong galunggong","2 pieces with kamatis and bagoong.",25,"₱50–60"],["Paksiw na galunggong","Simmered in vinegar, ginger and garlic.",25,"₱50–60"],["Sinigang na tilapia","Sour soup with kangkong and radish.",25,"₱45–60"],["Fried dilis with egg","Crispy dilis scrambled with egg.",18,"₱25–35"]]},
-  {g:"Pork",i:[["Tokwa’t baboy","Fried tokwa and boiled pork in soy-vinegar sauce.",25,"₱50–60"],["Giniling guisado","Ground pork with potato, carrot and peas.",22,"₱50–60"],["Ginisang monggo with pork","Add pork bits or chicharon and malunggay.",20,"₱35–45"],["Sinigang na baboy","Kasim or buto-buto with vegetables.",22,"₱70–90"]]},
-  {g:"Canned",i:[["Sardinas with misua and egg","Sardines simmered with misua, crack in an egg.",25,"₱40–50"],["Ginisang sardinas with pechay","Sauté sardines with onion, tomato and pechay.",20,"₱35–45"],["Tuna torta","Canned tuna mixed with 2 eggs, fried as patties.",28,"₱50–60"],["Corned beef with potato","Stretch one can with potato and an egg.",20,"₱45–60"]]},
-  {g:"Budget plant protein",i:[["Ginisang monggo with malunggay","Cheapest protein ulam. Add dilis for more.",14,"₱20–30"],["Tokwa sisig","Fried tokwa chopped with onion, chili and egg.",18,"₱30–40"],["Ginataang sitaw at kalabasa with tokwa","Add fried tokwa cubes for protein.",12,"₱30–40"]]}
+  {g:"From your market list",i:[["Adobong balunbalunan with sayote","Balunbalunan adobo stretched with sliced sayote. Simmer until tender.",22,"₱25–35"],["Chicken breast guisado with kangkong","Sauté sliced breast with garlic and onion, add kangkong at the end.",28,"₱35–45"],["Chicken breast tinola with malunggay","Ginger broth with breast, sayote and malunggay.",28,"₱35–45"],["Ginisang monggo with dilis","Top with fried dilis and malunggay.",18,"₱15–20"],["Monggo with kalabasa","Cubed kalabasa makes it thicker and more filling.",14,"₱15–20"],["Sardinas torta","Half a can of sardines mixed with 2 eggs, fried flat.",25,"₱30–35"],["Ginisang sardinas with sayote","Sauté sardines with onion, tomato and sliced sayote.",20,"₱30–35"],["Tokwa and egg scramble","Crumbled tokwa scrambled with 2 eggs and onion.",20,"₱25–30"],["Adobong kangkong with tokwa","Kangkong adobo with fried tokwa cubes.",12,"₱20–25"],["Dilis omelette","Fried dilis folded into 2 beaten eggs.",18,"₱20–25"],["Ginisang kalabasa with egg","Sauté kalabasa until soft, scramble in an egg.",13,"₱20–25"],["Lugaw with egg and chicken","Rice porridge with ginger, a boiled egg and shredded breast.",22,"₱30–35"]]},
+  {g:"Eggs",i:[["Sarciadong itlog","Boiled eggs in a sautéed tomato and onion sauce.",18,"₱30–40"],["Egg and sayote guisado","Sliced sayote sautéed with egg.",13,"₱20–25"],["Tortang talong with 2 eggs","Fry the talong, dip in beaten egg, fry again.",13,"₱30–40"],["Egg and malunggay omelette","3 eggs with a handful of malunggay.",18,"₱30–35"],["Ginisang kamatis with egg","Sauté tomato and onion, scramble in 3 eggs.",18,"₱30–40"],["Hard-boiled eggs in sauce","Boiled eggs simmered in adobo or tomato sauce.",18,"₱30–40"]]},
+  {g:"Chicken",i:[["Balunbalunan sisig","Boiled then fried balunbalunan, chopped with onion, chili and calamansi.",22,"₱30–40"],["Pan-fried garlic chicken breast","Thin slices with garlic, soy sauce and calamansi.",28,"₱35–45"],["Adobong balunbalunan","Simmer until tender. One of the cheapest proteins.",22,"₱30–40"],["Tinolang manok","With malunggay and sayote or green papaya.",25,"₱60–80"],["Adobong manok","Use legs or thighs, cheaper than breast.",25,"₱60–80"],["Arroz caldo with egg","Chicken rice porridge plus a boiled egg.",20,"₱40–50"],["Chicken sotanghon soup","Shredded chicken, sotanghon, cabbage.",20,"₱45–60"]]},
+  {g:"Fish",i:[["Sinigang na galunggong","Sour soup with kangkong and radish.",25,"₱50–60"],["Tinapa with egg","Flaked smoked fish scrambled with egg and tomato.",20,"₱35–45"],["Ginisang dilis with kamatis","Dilis sautéed with tomato and onion.",15,"₱20–25"],["Pritong galunggong","2 pieces with kamatis and bagoong.",25,"₱50–60"],["Paksiw na galunggong","Simmered in vinegar, ginger and garlic.",25,"₱50–60"],["Sinigang na tilapia","Sour soup with kangkong and radish.",25,"₱45–60"],["Fried dilis with egg","Crispy dilis scrambled with egg.",18,"₱25–35"]]},
+  {g:"Pork",i:[["Ginisang sitaw with giniling","A little ground pork stretched with lots of sitaw.",15,"₱35–45"],["Pork bone sinigang","Buto-buto from the shop with kangkong and gabi.",15,"₱25–35"],["Tokwa’t baboy","Fried tokwa and boiled pork in soy-vinegar sauce.",25,"₱50–60"],["Giniling guisado","Ground pork with potato, carrot and peas.",22,"₱50–60"],["Ginisang monggo with pork","Add pork bits or chicharon and malunggay.",20,"₱35–45"],["Sinigang na baboy","Kasim or buto-buto with vegetables.",22,"₱70–90"]]},
+  {g:"Canned",i:[["Tuna with kangkong","Sauté canned tuna with garlic, add kangkong.",18,"₱40–50"],["Sardinas sotanghon soup","Sardines simmered with sotanghon and pechay.",18,"₱35–45"],["Sardinas with misua and egg","Sardines simmered with misua, crack in an egg.",25,"₱40–50"],["Ginisang sardinas with pechay","Sauté sardines with onion, tomato and pechay.",20,"₱35–45"],["Tuna torta","Canned tuna mixed with 2 eggs, fried as patties.",28,"₱50–60"],["Corned beef with potato","Stretch one can with potato and an egg.",20,"₱45–60"]]},
+  {g:"Budget plant protein",i:[["Ginisang upo with tokwa","Upo sautéed with tokwa cubes.",10,"₱25–30"],["Pinakbet with tokwa","Mixed vegetables with bagoong and fried tokwa.",12,"₱30–40"],["Ginisang monggo with malunggay","Cheapest protein ulam. Add dilis for more.",14,"₱20–30"],["Tokwa sisig","Fried tokwa chopped with onion, chili and egg.",18,"₱30–40"],["Ginataang sitaw at kalabasa with tokwa","Add fried tokwa cubes for protein.",12,"₱30–40"]]}
 ];
 
 /* ---------- state ---------- */
@@ -676,15 +711,38 @@ function viewFood(){
         <p>Fill up on real food before softdrinks and chichirya.</p>
         <p>If your weight hasn’t gone up after 3 weeks, add 1 more cup of rice or 1 extra snack a day.</p></div>`;
   } else if(sub.food==="shop"){
-    body = FOODS.map(g=>`<h2 class="sec">${g.g}</h2><div class="card"><p class="muted small">${g.note}</p><div class="list">${g.items.map(([n,p])=>`<div class="li"><span>${n}</span><span class="muted r">${p}</span></div>`).join("")}</div></div>`).join("")
+    const m=marketState(), t=m.tier, v=x=>(x&&typeof x==="object")?x[t]:x;
+    const items=MARKET.filter(i=>!i.only||i.only===t);
+    const total=items.reduce((s,i)=>s+v(i.p),0), spent=items.reduce((s,i)=>s+(m.bought[i.k]?v(i.p):0),0), got=items.filter(i=>m.bought[i.k]).length;
+    const tiers=Object.entries(MARKET_TIERS).map(([k,o])=>{ const tt=MARKET.filter(i=>!i.only||i.only===k).reduce((s,i)=>s+((i.p&&typeof i.p==="object")?i.p[k]:i.p),0); return `<button type="button" data-act="mtier" data-t="${k}" aria-pressed="${t===k}"><b>₱${tt.toLocaleString()}</b><span>${o.label}, ${o.protein}</span></button>`; }).join("");
+    const groups=["Protein","Energy","Vegetables"].map(g=>{
+      const rows=items.filter(i=>i.g===g).map(i=>`<div class="li mk${m.bought[i.k]?" got":""}"><div><b>${i.n}</b>${v(i.q)?` <span class="muted q">${v(i.q)}</span>`:""}${i.note?`<p class="muted small" style="margin-top:2px">${i.note}</p>`:""}</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-shrink:0"><span class="muted">₱${v(i.p)}</span><button class="check" data-act="mbuy" data-k="${i.k}" aria-label="Mark ${i.n} bought" aria-pressed="${!!m.bought[i.k]}">${CHECK}</button></div></div>`).join("");
+      return `<h2 class="sec">${g}</h2><div class="card"><div class="list" style="margin-top:0">${rows}</div></div>`;
+    }).join("");
+    body = `<div class="tier">${tiers}</div>
+      <div class="card" style="margin-top:12px"><div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px"><h3>₱${spent.toLocaleString()} of ₱${total.toLocaleString()}</h3><span class="badge">${got} of ${items.length} items</span></div>
+        <div class="mbar"><i style="width:${total?100*spent/total:0}%"></i></div>
+        <p class="muted small" style="margin-top:8px">Tick items as you buy them. The list resets every Monday.</p></div>
+      ${groups}
+      <h2 class="sec">Eat in this order so nothing spoils</h2><div class="card rules">
+        <p><b>Day 1:</b> freeze the chicken breast and balunbalunan in daily portions. Move tomorrow’s portion to the fridge each night.</p>
+        <p><b>Days 1–3:</b> tokwa and kangkong first.</p>
+        <p><b>Days 3–5:</b> chicken from the freezer.</p>
+        <p><b>Days 5–7:</b> sardines, monggo, eggs, kalabasa and sayote.</p></div>
+      <h2 class="sec">Save more</h2><div class="card rules">
+        <p>Buy vegetables near closing time, when vendors lower prices.</p>
+        <p>Pork trimmings or bones from the shop add protein to monggo or sinigang for almost nothing.</p>
+        <p>Buy rice by the sack when you can. It’s cheaper per kilo and never spoils.</p></div>
+      <div style="margin-top:12px"><button class="linkbtn" data-act="mclear">Clear ticks</button></div>`
       + `<h2 class="sec">Protein guide</h2><div class="card"><p class="muted small">Roughly how much protein you get. No need to count exactly.</p><div class="list">${PROTEIN_GUIDE.map(([n,g])=>`<div class="li"><span>${n}</span><b class="r">${g}</b></div>`).join("")}</div></div>`
       + `<p class="muted small" style="margin:12px 4px 0">Prices are approximate and vary by market and season.</p>`;
   } else {
-    body = `<p class="muted small" style="margin:16px 4px 0">Protein and cost are rough estimates for one serving with rice. Rotate these through Meal 2 and Meal 3 so you don’t get bored.</p>`
+    body = `<p class="muted small" style="margin:16px 4px 0">Protein and cost are rough estimates for one serving with rice. The first group uses only what’s on your weekly market list. Rotate them through Meal 2 and Meal 3 so you don’t get bored.</p>`
       + ULAM.map(grp=>`<h2 class="sec">${grp.g}</h2><div class="card"><div class="list" style="margin-top:0">${grp.i.map(([n,how,p,c])=>`<div class="li" style="align-items:flex-start"><div><b>${n}</b><p class="muted small" style="margin-top:2px">${how}</p></div><div class="r" style="min-width:74px"><span class="badge" style="background:var(--sun-soft);color:var(--ink)">≈${p} g</span><p class="muted small" style="margin-top:4px">${c}</p></div></div>`).join("")}</div></div>`).join("");
   }
   return `<header class="page-head"><h1>Food</h1><p class="muted">Training breaks muscle down. Food builds it back bigger.</p></header>
-    ${segBar("food",[["meals","Meals"],["shop","Shopping list"],["ulam","Ulam ideas"]])}${body}`;
+    ${segBar("food",[["meals","Meals"],["shop","Market"],["ulam","Ulam ideas"]])}${body}`;
 }
 
 function chartSVG(){
@@ -858,6 +916,9 @@ document.addEventListener("click",e=>{
     else { pickDays=sel; render(); }
     return;
   }
+  if(act==="mtier"){ marketState().tier=b.dataset.t; save(); render(); return; }
+  if(act==="mbuy"){ const m=marketState(); m.bought[b.dataset.k]=!m.bought[b.dataset.k]; save(); render(); return; }
+  if(act==="mclear"){ marketState().bought={}; save(); render(); toast("Ticks cleared"); return; }
   if(act==="start") startWorkout(false);
   else if(act==="mini") startWorkout(true);
   else if(act==="addex") addExercise();
