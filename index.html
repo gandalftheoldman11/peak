@@ -292,6 +292,21 @@ const WNAMES = {UA:"Upper A",LA:"Lower A",UB:"Upper B",LB:"Lower B"};
 const WFOCUS = {UA:"Push-ups, rows, shoulders, arms",LA:"Squats, lunges, glutes, core",UB:"Chest, back, shoulders, arms",LB:"Hinges, single-leg work, core"};
 function wname(t){ return WNAMES[t] || ("Workout "+t); }
 function nextOf(t){ const i=ORDER.indexOf(t); return ORDER[(i+1)%ORDER.length]; }
+const SHORT = {UA:"Up A",LA:"Low A",UB:"Up B",LB:"Low B"};
+const FULLDAY = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+/* each lift day has a fixed workout: 1st lift day of the week = Upper A, 2nd = Lower A, 3rd = Upper B, 4th = Lower B */
+function liftDays(sel){ return (sel||TRAIN_DAYS).slice().sort((a,b)=>((a+6)%7)-((b+6)%7)); }
+function typeForDay(dow,sel){ const i=liftDays(sel).indexOf(dow); return i>=0 ? ORDER[i] : null; }
+function dayForType(t){ const d=liftDays()[ORDER.indexOf(t)]; return d==null ? "" : FULLDAY[d]; }
+function nextLiftAfter(dow){ for(let k=1;k<=7;k++){ const d=(dow+k)%7; if(TRAIN_DAYS.includes(d)) return d; } return null; }
+function todayType(){
+  const dow=myNow().getDay();
+  const t=typeForDay(dow); if(t) return t;
+  /* rest day: make up the most recent missed lift day this week, otherwise preview the next one */
+  const done=weekDoneSet();
+  if(missedSinceLast()>=1) for(let k=1;k<=6;k++){ const d=(dow-k+7)%7; if(d===0 && dow!==0) break; if(TRAIN_DAYS.includes(d) && !done.has(d)) return typeForDay(d); if(d===1) break; }
+  const n=nextLiftAfter(dow); return n==null ? "UA" : typeForDay(n);
+}
 const PROGRAM_IDS = [...new Set(ORDER.flatMap(t=>WORKOUTS[t]))];
 const HOW = {
   gs:[["Feet a bit wider than your shoulders, toes slightly out.","Hold the dumbbell upright at your chest, elbows pointing down.","Sit down between your heels until your thighs are about level with the floor, then stand up through your whole foot."],"Heels lifting or knees caving in."],
@@ -715,7 +730,7 @@ function viewToday(){
   const done=S.sessions.length, now=myNow(), dow=now.getDay(), isTrain=TRAIN_DAYS.includes(dow);
   const doneToday=S.sessions.some(s=>s.day===dayKey(now));
   const weekDone=weekDoneSet();
-  const left=Math.max(0,TOTAL-done), type=S.nextType, n=setsNow();
+  const left=Math.max(0,TOTAL-done), type=todayType(), n=setsNow();
   let chips="";
   [1,2,3,4,5,6,0].forEach(d=>{ chips+=`<div class="${["chip",TRAIN_DAYS.includes(d)?"train":"",weekDone.has(d)?"done":"",d===dow?"now":""].join(" ")}">${DAYS[d]}</div>`; });
 
@@ -730,7 +745,7 @@ function viewToday(){
   if(doneToday) body=`<h2>Done for today</h2><p class="muted" style="margin-top:6px">Eat well, sleep well. Muscle grows while you rest.</p>`;
   else if(isTrain || missed>=1) body=`<div class="row"><h2>${wname(type)}</h2><span class="badge">${n} sets each</span></div>
       <p class="muted">${WORKOUTS[type].map(id=>EX[id].name).join(", ")}</p>${startBtns}`;
-  else body=`<h2>Rest day</h2><p class="muted" style="margin-top:4px">Take a 30-minute walk if you can. Next up is ${wname(type)}.</p>${startBtns}`;
+  else body=`<h2>Rest day</h2><p class="muted" style="margin-top:4px">Take a 30-minute walk if you can. Next up is ${wname(type)}${(()=>{ const nd=nextLiftAfter(dow); return nd==null?"":" on "+FULLDAY[nd]; })()}.</p>${startBtns}`;
 
   const mi=nextMealIdx();
   const meal = mi>=0 ? `<div class="card next"><div class="time">${MEALS[mi].t}</div><div><h3>${esc(MEALS[mi].name)}</h3><p class="muted small" style="margin-top:2px">${esc(MEALS[mi].what)}</p><span class="badge" style="margin-top:6px">≈${MEAL_P[mi]} g protein</span><br>
@@ -786,7 +801,7 @@ function viewSummary(info){
     : `<p class="muted empty">No level-ups this time. Hit your target reps on every set to earn one.</p>`;
   return heroBlock(S.sessions.length,"One step higher.")+`
     <h2 class="sec">Session complete</h2><section class="today"><h2>${info.mini?"You showed up":wname(info.type)+" done"}</h2>
-    <p class="muted" style="margin-top:6px">${info.sets} set${info.sets===1?"":"s"} completed. Next time is ${wname(S.nextType)}. Now go eat your post-workout meal.</p>
+    <p class="muted" style="margin-top:6px">${info.sets} set${info.sets===1?"":"s"} completed. ${(()=>{ const nd=nextLiftAfter(myNow().getDay()); return nd==null?"":`Next up: ${wname(typeForDay(nd))} on ${FULLDAY[nd]}. `; })()}Now go eat your post-workout meal.</p>
     <div class="ex" style="margin-top:16px;padding:14px 16px;background:var(--bg);border:0;box-shadow:none"><h3>Level-ups for next time</h3><div class="list">${rows}</div></div>
     <div style="margin-top:16px"><button class="btn" data-act="home">Back to today</button></div></section>`;
 }
@@ -885,14 +900,14 @@ function viewPlan(){
   let body="";
   if(sub.plan==="schedule"){
     const sel = pickDays || TRAIN_DAYS;
-    let week=""; [1,2,3,4,5,6,0].forEach(d=>{ const t=sel.includes(d), prev=sel.includes((d+6)%7); week+=`<button type="button" class="day${t?" t":""}" data-act="day" data-d="${d}" aria-pressed="${t}" aria-label="${DAYS[d]}${t?", lift day":""}" style="border:0;width:100%"><b>${DAYS[d].slice(0,1)}</b>${t?"Lift":prev?"Walk":"Rest"}</button>`; });
+    let week=""; [1,2,3,4,5,6,0].forEach(d=>{ const t=sel.includes(d), prev=sel.includes((d+6)%7); week+=`<button type="button" class="day${t?" t":""}" data-act="day" data-d="${d}" aria-pressed="${t}" aria-label="${DAYS[d]}${t?", lift day":""}" style="border:0;width:100%"><b>${DAYS[d].slice(0,1)}</b>${t?(sel.length===4?SHORT[typeForDay(d,sel)]:"Lift"):prev?"Walk":"Rest"}</button>`; });
     const need = 4 - sel.length;
     const dayNote = need>0 ? `<p class="small" style="margin-top:12px;font-weight:700;color:var(--accent)">Pick ${need} more day${need>1?"s":""} to save your schedule.</p>`
       : threeInRow(sel) ? `<p class="small" style="margin-top:12px;font-weight:700;color:var(--sun)">3 lift days in a row is a lot. Upper and lower days can be back to back, but try to keep a rest day after every 2.</p>` : "";
     const list=t=>WORKOUTS[t].map(id=>`<div class="li"><span>${esc(EX[id].name)}</span><span class="muted r">${EX[id].kind==="w"?(EX[id].mode==="pair"?"2 dumbbells":"1 dumbbell"):"bodyweight"}</span></div>`).join("");
     body=`<h2 class="sec">Your week</h2><div class="card"><p class="muted small">Tap to choose your 4 lift days.</p><div class="week">${week}</div>${dayNote}
         <p class="muted small" style="margin-top:12px">Train around 6 PM, an hour after your afternoon snack. Weeks 1–2 are 2 sets per exercise, then 3 sets from week 3.</p></div>
-      ${ORDER.map(t=>`<h2 class="sec">${wname(t)}</h2><div class="card"><p class="muted small">${WFOCUS[t]}</p><div class="list">${list(t)}</div></div>`).join("")}`;
+      ${ORDER.map(t=>`<h2 class="sec">${wname(t)}${dayForType(t)?", "+dayForType(t):""}</h2><div class="card"><p class="muted small">${WFOCUS[t]}</p><div class="list">${list(t)}</div></div>`).join("")}`;
   } else if(sub.plan==="bells"){
     const bells=S.bells.slice().sort((a,b)=>a.kg-b.kg).map(b=>`<div class="bell">${b.n} × ${b.kg} kg<button data-act="delbell" data-kg="${b.kg}" aria-label="Remove ${b.kg} kg">×</button></div>`).join("");
     body=`<h2 class="sec">What you own</h2><div class="card"><p class="muted small">The app only suggests weights you own.</p><div class="bells">${bells}</div></div>
@@ -935,7 +950,7 @@ function newSets(id,n){
   return Array.from({length:n},()=> e.kind==="w" ? {w:p.kg, r:p.target, done:false} : {r:p.target, done:false});
 }
 function startWorkout(mini){
-  const type=S.nextType, n=setsNow();
+  const type=todayType(), n=setsNow();
   const list = mini ? [WORKOUTS[type][0]] : WORKOUTS[type].slice();
   const sets={}; list.forEach(id=>sets[id]=newSets(id,n));
   S.draft={type, ts:Date.now(), n, mini:!!mini, list, sets};
