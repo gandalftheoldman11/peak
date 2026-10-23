@@ -271,7 +271,7 @@ const EX = {
   pl:{name:"Plank",kind:"t",tip:"Straight line from head to heels. Squeeze your glutes."},
   rdl:{name:"Romanian deadlift",kind:"w",mode:"single",tip:"Hold the dumbbell with both hands. Push your hips back with a slight knee bend."},
   lu:{name:"Reverse lunges",kind:"w",mode:"pair",tip:"Step back, back knee close to the floor. Reps per leg."},
-  pu:{name:"Push-ups",kind:"b",start:6,tip:"On your knees is fine. Chest close to the floor."},
+  pu:{name:"Push-ups",kind:"b",start:12,tip:"Stop 2–3 reps short of your max. Chest close to the floor."},
   bor:{name:"Bent-over row",kind:"w",mode:"single",tip:"Hinge forward, free hand on your knee, pull the dumbbell to your belly. Reps per side."},
   lr:{name:"Lateral raise",kind:"w",mode:"pair",tip:"Go slow. Stop below shoulder height if it feels too hard."},
   te:{name:"Overhead tricep extension",kind:"w",mode:"single",tip:"One dumbbell in both hands, lower it behind your head."},
@@ -284,12 +284,14 @@ const EX = {
   bss:{name:"Bulgarian split squat",kind:"w",mode:"pair",start:8,tip:"Back foot on a chair, lower straight down. Reps per leg."},
   su:{name:"Step-ups",kind:"w",mode:"pair",tip:"Step onto a sturdy chair or step, push through the top foot. Reps per leg."},
   ss:{name:"Sumo squat",kind:"w",mode:"single",start:12,tip:"Wide stance, toes out, hold the dumbbell between your legs."},
-  lraise:{name:"Leg raises",kind:"b",start:8,tip:"Lie flat, raise straight legs up, lower slowly without touching the floor."}
+  lraise:{name:"Leg raises",kind:"b",start:8,tip:"Lie flat, raise straight legs up, lower slowly without touching the floor."},
+  fly:{name:"Floor fly",kind:"w",mode:"pair",start:10,tip:"Lie on the floor, open your arms wide, then squeeze them together over your chest."},
+  rfly:{name:"Reverse fly",kind:"w",mode:"pair",start:12,tip:"Bent over, raise the dumbbells out to the sides. Light weight, slow."}
 };
-const WORKOUTS = {UA:["pu","or","sp","bc","te","pl"], LA:["gs","lu","gb","cr","dbug"], UB:["fp","bor","ap","lr","ham","dip"], LB:["rdl","bss","su","ss","lraise"]};
+const WORKOUTS = {UA:["pu","fly","or","sp","lr","bc","te","pl"], LA:["gs","lu","gb","cr","dbug"], UB:["fp","bor","ap","lr","rfly","ham","dip"], LB:["rdl","bss","su","ss","lraise"]};
 const ORDER = ["UA","LA","UB","LB"];
 const WNAMES = {UA:"Upper A",LA:"Lower A",UB:"Upper B",LB:"Lower B"};
-const WFOCUS = {UA:"Push-ups, rows, shoulders, arms",LA:"Squats, lunges, glutes, core",UB:"Chest, back, shoulders, arms",LB:"Hinges, single-leg work, core"};
+const WFOCUS = {UA:"Chest, side shoulders, back, arms",LA:"Squats, lunges, glutes, core",UB:"Chest, side and rear shoulders, back, arms",LB:"Hinges, single-leg work, core"};
 function wname(t){ return WNAMES[t] || ("Workout "+t); }
 function nextOf(t){ const i=ORDER.indexOf(t); return ORDER[(i+1)%ORDER.length]; }
 const SHORT = {UA:"Up A",LA:"Low A",UB:"Up B",LB:"Low B"};
@@ -326,6 +328,8 @@ const HOW = {
   bss:[["Stand a big step in front of a chair, back foot resting on it.","Lower straight down until your front thigh is about level with the floor.","Push through your front heel to stand. Start without weights if needed."],"Front knee caving inward."],
   su:[["Stand facing a sturdy chair or step, dumbbells at your sides.","Step up with one foot and push through it to stand fully on top.","Step down slowly. Do all reps on one leg, then switch."],"Pushing off with the bottom foot."],
   ss:[["Feet wide, toes pointing out.","Hold the dumbbell with both hands between your legs.","Squat down with your knees following your toes, then stand up."],"Knees caving in."],
+  fly:[["Lie on your back, knees bent, dumbbells above your chest with palms facing each other.","Keep a slight bend in your elbows and open your arms wide until your upper arms touch the floor.","Squeeze your chest to bring the dumbbells back together over your chest."],"Bending your elbows a lot so it turns into a press."],
+  rfly:[["Hinge forward until your back is almost flat, dumbbells hanging below your chest.","With a slight bend in your elbows, raise your arms out to the sides.","Squeeze your shoulder blades at the top, then lower slowly."],"Swinging the weights or shrugging your shoulders."],
   lraise:[["Lie flat, hands under your hips.","Raise your straight legs up to vertical.","Lower slowly and stop just above the floor."],"Lower back lifting off the floor."],
   pu:[["Hands a bit wider than your shoulders, on your toes or knees.","Body in a straight line.","Lower your chest close to the floor, then push back up."],"Hips sagging, or only doing tiny half reps."],
   bor:[["Feet hip-width apart, knees slightly bent.","Hinge forward until your back is almost flat, free hand on your knee.","Pull the dumbbell to your belly, squeeze, then lower slowly."],"Standing too upright or rounding your back."],
@@ -406,7 +410,11 @@ Object.assign(POSES,{
   ss:[{t:"Start (front)",L:[[[40,108],[46,82],[52,56]],[[80,108],[74,82],[68,56]],[[52,56],[68,56]],[[60,56],[60,24]],[[48,24],[72,24]],[[48,24],[54,42],[58,58]],[[72,24],[66,42],[62,58]]],F:[],h:[60,12],d:[[60,62,90]]},
       {t:"Bottom (front)",L:[[[40,108],[30,88],[52,78]],[[80,108],[90,88],[68,78]],[[52,78],[68,78]],[[60,78],[60,46]],[[48,46],[72,46]],[[48,46],[54,64],[58,80]],[[72,46],[66,64],[62,80]]],F:[],h:[60,34],d:[[60,84,90]]}],
   lraise:[{t:"Start",L:[[[30,104],[62,104],[86,100],[108,96]],LIE_ARMS],F:[],h:[18,100],d:[]},
-          {t:"Top",L:[[[30,104],[62,104],[64,80],[66,56]],LIE_ARMS],F:[],h:[18,100],d:[]}]
+          {t:"Top",L:[[[30,104],[62,104],[64,80],[66,56]],LIE_ARMS],F:[],h:[18,100],d:[]}],
+  fly:[{t:"Start",L:[[[30,102],[64,102],[82,82],[96,107]],[[30,102],[30,88],[30,74]]],F:[[[64,102],[78,80],[90,107]],[[34,102],[34,88],[34,74]]],h:[17,99],d:[[32,72,90]]},
+       {t:"Arms open",L:[[[30,102],[64,102],[82,82],[96,107]],[[30,102],[40,96],[46,104]]],F:[[[64,102],[78,80],[90,107]],[[34,102],[24,96],[18,104]]],h:[17,99],d:[[47,101,90],[17,101,90]]}],
+  rfly:[{t:"Start (front)",L:[[[52,108],[52,82],[54,56]],[[68,108],[68,82],[66,56]],[[54,56],[66,56]],[[60,56],[60,42]],[[48,42],[72,42]],[[48,42],[47,58],[46,72]],[[72,42],[73,58],[74,72]]],F:[],h:[60,32],d:[[46,75,0],[74,75,0]]},
+         {t:"Top (front)",L:[[[52,108],[52,82],[54,56]],[[68,108],[68,82],[66,56]],[[54,56],[66,56]],[[60,56],[60,42]],[[48,42],[72,42]],[[48,42],[34,43],[20,45]],[[72,42],[86,43],[100,45]]],F:[],h:[60,32],d:[[17,45,90],[103,45,90]]}]
 });
 const WPOSES={
   "March in place":[{t:"Left",L:[[[60,108],[60,82],[60,56],[60,24]],[[60,24],[66,38],[70,50]]],F:[[[60,56],[74,66],[70,88]],[[60,24],[54,40],[52,54]]],h:[60,12],d:[]},
@@ -543,6 +551,7 @@ function migrate(s){
   if(s.v!==2){ s.v=2; s.prog={}; delete s.cur; }
   if(!Array.isArray(s.bells) || !s.bells.length) s.bells = base.bells;
   if(!ORDER.includes(s.nextType)) s.nextType = "UA";
+  if(s.prog && s.prog.pu && (s.prog.pu.target||0) < 12) s.prog.pu.target = 12;
   if(s.draft && !ORDER.includes(s.draft.type)) s.draft = null;
   return s;
 }
